@@ -1,11 +1,11 @@
-name: CI/CD with Tests and Deploy Existing Image
+name: CI/CD
 
 on:
   push:
     branches: [ "master" ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,24 +20,35 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run unit tests
+    - name: Run tests
       run: npm test -- --watchAll=false
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-test   # solo se ejecuta si las pruebas pasan
+    - name: Build Docker image
+      run: docker build -t zeua/reactprod .
 
-    steps:
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u zeua --password-stdin
+
+    - name: Push Docker image
+      run: docker push zeua/reactprod
+
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: ${{ secrets.EC2_IP }}     # tu IP pública de EC2 (ej. 54.144.169.71)
+        host: ${{ secrets.EC2_IP }}       # tu IP pública de EC2
         username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }} # tu clave privada (.pem)
+        key: ${{ secrets.EC2_SSH_KEY }}   # tu clave privada (.pem)
         script: |
           # Detener y eliminar contenedor reactprod si existe
           docker stop reactprod || true
           docker rm reactprod || true
 
-          # Levantar el contenedor usando la imagen ya descargada
-          docker run -d --name reactprod -p 80:80 frontend-react-app
+          # Detener y eliminar cualquier contenedor que esté usando el puerto 80
+          docker ps -q --filter "publish=80" | xargs -r docker stop
+          docker ps -q --filter "publish=80" | xargs -r docker rm
+
+          # Descargar la última imagen
+          docker pull zeua/reactprod
+
+          # Levantar el nuevo contenedor en el puerto 80
+          docker run -d --name reactprod -p 80:80 zeua/reactprod
