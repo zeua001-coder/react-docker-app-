@@ -1,18 +1,13 @@
-# Declaramos nuestra primera etapa (stage) con la parte AS build
-FROM node AS build
-
+# Etapa 1: build de React
+FROM node:20 AS build
 WORKDIR /app
-
-COPY ./package.json ./
-
+COPY package*.json ./
 RUN npm install
-
-COPY ./ ./
-
+COPY . .
 RUN npm run build
 
-# Inicia nuestra siguiente stage
-FROM nginx
-
-# Copiaremos los archivos generados desde la fase build hacia directorio de Nginx
+# Etapa 2: servidor Nginx
+FROM nginx:alpine
 COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
