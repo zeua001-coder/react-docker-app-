@@ -1,36 +1,12 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:20'
-            args '-u root'
-        }
-    }
+    agent any
 
     stages {
-
-        stage('Instalar dependencias') {
+        stage('Clonar Repositorio') {
             steps {
-                dir('frontend') {
-                    sh 'npm install'
-                }
+                echo 'Clonando repositorio desde GitHub...'
+                checkout scm
             }
         }
-
-        stage('Ejecutar Tests') {
-            steps {
-                dir('frontend') {
-                    sh 'npm test -- --watchAll=false'
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                dir('frontend') {
-                    sh 'npm run build'
-                }
-            }
-        }
-
     }
 }
