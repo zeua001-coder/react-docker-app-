@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:20'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     stages {
         stage('Checkout') {
@@ -29,9 +34,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Elimina contenedor previo si existe
                 sh 'docker rm -f reactprod || true'
-                // Levanta nuevo contenedor
                 sh 'docker run -d --name reactprod -p 80:80 zeua001/reactprod'
             }
         }
