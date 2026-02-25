@@ -43,12 +43,12 @@ jobs:
           docker stop reactprod || true
           docker rm reactprod || true
 
-          # Detener y eliminar cualquier contenedor que esté usando el puerto 3000
-          docker ps -q --filter "publish=3000" | xargs -r docker stop
-          docker ps -q --filter "publish=3000" | xargs -r docker rm
+          # Detener y eliminar cualquier contenedor que esté usando el puerto 80
+          docker ps -q --filter "publish=80" | xargs -r docker stop
+          docker ps -q --filter "publish=80" | xargs -r docker rm
 
           # Descargar la última imagen
           docker pull zeua/reactprod
 
-          # Levantar el nuevo contenedor
-          docker run -d --name reactprod -p 3000:3000 zeua/reactprod
+          # Levantar el nuevo contenedor en el puerto 80
+          docker run -d --name reactprod -p 80:3000 zeua/reactprod
