@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -22,3 +22,12 @@ jobs:
 
     - name: Run tests
       run: npm test -- --watchAll=false
+
+    - name: Build Docker image
+      run: docker build -t zeua001/reactprod .
+
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u zeua001 --password-stdin
+
+    - name: Push Docker image
+      run: docker push zeua001/reactprod
