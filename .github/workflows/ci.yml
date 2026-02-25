@@ -1,11 +1,11 @@
-name: CI/CD
+name: CI/CD with Tests and Docker Compose Deploy
 
 on:
   push:
     branches: [ "master" ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,35 +20,21 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run tests
+    - name: Run unit tests
       run: npm test -- --watchAll=false
 
-    - name: Build Docker image
-      run: docker build -t zeua/reactprod .
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test   # solo se ejecuta si las pruebas pasan
 
-    - name: Login to DockerHub
-      run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u zeua --password-stdin
-
-    - name: Push Docker image
-      run: docker push zeua/reactprod
-
-    - name: Deploy to EC2
+    steps:
+    - name: Deploy to EC2 with Docker Compose
       uses: appleboy/ssh-action@v0.1.10
       with:
         host: ${{ secrets.EC2_IP }}       # tu IP pública de EC2
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}   # tu clave privada (.pem)
         script: |
-          # Detener y eliminar contenedor reactprod si existe
-          docker stop reactprod || true
-          docker rm reactprod || true
-
-          # Detener y eliminar cualquier contenedor que esté usando el puerto 80
-          docker ps -q --filter "publish=80" | xargs -r docker stop
-          docker ps -q --filter "publish=80" | xargs -r docker rm
-
-          # Descargar la última imagen
-          docker pull zeua/reactprod
-
-          # Levantar el nuevo contenedor en el puerto 80
-          docker run -d --name reactprod -p 80:80 zeua/reactprod
+          cd ~/reactproject/frontend   # ajusta la ruta donde está tu docker-compose.yml
+          docker compose down || true
+          docker compose up -d --build
