@@ -1,4 +1,4 @@
-name: CI/CD with Tests and Docker Compose Deploy
+name: CI/CD with Tests and Docker Compose Deploy ReactProject
 
 on:
   push:
