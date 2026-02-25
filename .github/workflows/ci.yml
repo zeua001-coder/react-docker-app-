@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [ "master" ]   # Se ejecuta en cada push a master
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -31,3 +31,15 @@ jobs:
 
     - name: Push Docker image
       run: docker push zeua/reactprod
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.EC2_HOST }}   # aquí va tu DNS público
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }} # tu clave privada (.pem) guardada como secreto
+        script: |
+          docker pull zeua/reactprod
+          docker stop reactprod || true
+          docker rm reactprod || true
+          docker run -d --name reactprod -p 3000:3000 zeua/reactprod
