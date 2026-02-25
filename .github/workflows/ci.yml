@@ -25,16 +25,24 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-test   # solo se ejecuta si las pruebas pasan
+    needs: build-and-test
 
     steps:
     - name: Deploy to EC2 with Docker Compose
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: ${{ secrets.EC2_IP }}       # tu IP pública de EC2
+        host: ${{ secrets.EC2_IP }}
         username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}   # tu clave privada (.pem)
+        key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           cd ~/reactproject/frontend   # ajusta la ruta donde está tu docker-compose.yml
+
+          # Detener y eliminar cualquier contenedor que esté usando el puerto 80
+          docker ps -q --filter "publish=80" | xargs -r docker stop
+          docker ps -q --filter "publish=80" | xargs -r docker rm
+
+          # Bajar servicios previos
           docker compose down || true
+
+          # Levantar servicios definidos en docker-compose.yml
           docker compose up -d --build
